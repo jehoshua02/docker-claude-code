@@ -4,15 +4,6 @@ set -e
 PASS=0
 FAIL=0
 
-# Create clean temp directories
-TEST_DIR=$(mktemp -d)
-mkdir -p "$TEST_DIR/workspace" "$TEST_DIR/claude"
-trap 'rm -rf "$TEST_DIR"' EXIT
-
-export WORKSPACE="$TEST_DIR/workspace"
-export CLAUDE_CONFIG_DIR="$TEST_DIR/claude"
-export CLAUDE_CREDENTIALS_FILE="${CLAUDE_CREDENTIALS_FILE:-$HOME/.claude/.credentials.json}"
-
 run_test() {
   local name="$1"
   shift
