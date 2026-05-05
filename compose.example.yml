@@ -13,6 +13,10 @@ secrets:
   ssh_private_key:
     # Path to your SSH private key. Remove this block if not using SSH.
     file: ./ssh_key
+  claude_credentials:
+    # Path to your Claude OAuth credentials file (~/.claude/.credentials.json).
+    # Remove this block if using ANTHROPIC_API_KEY instead.
+    file: ${CLAUDE_CREDENTIALS_FILE:-~/.claude/.credentials.json}
 
 services:
   claude:
@@ -29,20 +33,20 @@ services:
       - GIT_USER_NAME=${GIT_USER_NAME:-}
       - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
 
-    # Mount the SSH key as a Docker secret. Accessible inside the container at
-    # /run/secrets/ssh_private_key. Never baked into image layers or visible
-    # in docker inspect. Remove if not using SSH.
+    # Mount secrets. Never baked into image layers or visible in docker inspect.
+    # Remove entries you don't need.
     secrets:
       - ssh_private_key
+      - claude_credentials
 
     volumes:
       # Your project files. Claude reads and writes here.
       # Replace with the path to your project.
-      - ./workspace:/workspace
+      - ${WORKSPACE:-./workspace}:/workspace
       # Persisted Claude state: settings, conversation history, plugins, OAuth.
       # Without this mount, all state is lost when the container stops.
       # Using ~/.claude shares your host's Claude config directly.
-      - ~/.claude:/home/claude/.claude
+      - ${CLAUDE_CONFIG_DIR:-~/.claude}:/home/claude/.claude
 
     # Drop ALL Linux capabilities. Claude Code doesn't need any
     # (no net_bind, no chown, no setuid, etc).

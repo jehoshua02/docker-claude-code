@@ -35,6 +35,11 @@ echo "Built:"
 echo "  $IMAGE:$VERSION"
 echo "  $IMAGE:latest"
 
+echo ""
+echo "Running tests..."
+./test.sh
+echo ""
+
 if $PUSH; then
   echo ""
   echo "Pushing ..."
