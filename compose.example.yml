@@ -1,0 +1,81 @@
+# Copy to compose.yml and edit to suit your setup.
+#
+# Required:
+#   - .env file with ANTHROPIC_API_KEY (or log in via OAuth on first run)
+#   - ./workspace/ directory with files for Claude to work on
+#   - ./claude-data/ directory for persisted settings, history, plugins
+#
+# Optional:
+#   - ./ssh_key file for SSH access to private repos
+#   - GIT_USER_NAME and GIT_USER_EMAIL in .env for git commits
+
+secrets:
+  ssh_private_key:
+    # Path to your SSH private key. Remove this block if not using SSH.
+    file: ./ssh_key
+
+services:
+  claude:
+    image: jehoshua02/claude-code:latest
+
+    # Allocate a pseudo-TTY and keep stdin open for interactive sessions.
+    stdin_open: true
+    tty: true
+
+    environment:
+      # API key for Claude. Required unless using OAuth login.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # Git identity for commits. Optional — only needed if Claude will commit.
+      - GIT_USER_NAME=${GIT_USER_NAME:-}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
+
+    # Mount the SSH key as a Docker secret. Accessible inside the container at
+    # /run/secrets/ssh_private_key. Never baked into image layers or visible
+    # in docker inspect. Remove if not using SSH.
+    secrets:
+      - ssh_private_key
+
+    volumes:
+      # Your project files. Claude reads and writes here.
+      # Replace with the path to your project.
+      - ./workspace:/workspace
+      # Persisted Claude state: settings, conversation history, plugins, OAuth.
+      # Without this mount, all state is lost when the container stops.
+      # Using ~/.claude shares your host's Claude config directly.
+      - ~/.claude:/home/claude/.claude
+
+    # Drop ALL Linux capabilities. Claude Code doesn't need any
+    # (no net_bind, no chown, no setuid, etc).
+    cap_drop:
+      - ALL
+
+    # Prevent processes from gaining new privileges via setuid/setgid binaries
+    # or capability inheritance.
+    security_opt:
+      - no-new-privileges
+
+    # Make the entire root filesystem read-only. Claude can only write to
+    # the mounted volumes above and the tmpfs mounts below.
+    read_only: true
+
+    # Writable scratch areas. Contents are lost when the container stops.
+    # Required because the root filesystem is read-only.
+    #   /tmp — general scratch (Claude Code, node, etc.)
+    #   ~/.ssh — entrypoint writes SSH key and known_hosts here at startup
+    tmpfs:
+      - /tmp:uid=1000,gid=1000
+      - /home/claude/.ssh:uid=1000,gid=1000
+
+    # Resource limits. Adjust to your needs.
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "2"
+
+    # Cap log size to prevent disk fill from long sessions.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
