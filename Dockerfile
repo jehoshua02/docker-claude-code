@@ -28,6 +28,8 @@ RUN mkdir -p /home/claude/.ssh && \
 ENV PATH="/home/claude/.local/bin:${PATH}"
 ENV GIT_CONFIG_GLOBAL="/tmp/.gitconfig"
 
+RUN rm -f /home/claude/.claude.json && ln -s /tmp/.claude.json /home/claude/.claude.json
+
 USER claude
 WORKDIR /workspace
 
